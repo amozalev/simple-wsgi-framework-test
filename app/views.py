@@ -1,4 +1,3 @@
-from manage import app
 
 
 class Views:

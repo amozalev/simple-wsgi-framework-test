@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Отправить комментарий</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <h1><a href="/">Главная</a></h1>
+            <a href="/comments">Добавить комментарий</a>
+            <a href="/view">Все комментарии</a>
+            <a href="/stat">Таблица регионов</a>
+        </div>
+    </div>
+</nav>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+            <form class="form-horizontal">
+                <div class="form-group">
+                    <label for="inputSurname" class="col-xs-2 control-label">Фамилия:</label>
+                    <div class="col-xs-10">
+                        <input type="text" class="form-control" id="inputSurname" placeholder="Введите фамилию">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputName" class="col-xs-2 control-label">Имя:</label>
+                    <div class="col-xs-10">
+                        <input type="text" class="form-control" id="inputName" placeholder="Введите имя">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputPatronymicName" class="col-xs-2 control-label">Отчество:</label>
+                    <div class="col-xs-10">
+                        <input type="text" class="form-control" id="inputPatronymicName" placeholder="Введите отчество">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputRegion" class="col-xs-2 control-label">Регион:</label>
+                    <div class="col-xs-10">
+                        <select class="form-control" id="inputRegion">
+                            <option>Выбор</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputCity" class="col-xs-2 control-label">Город:</label>
+                    <div class="col-xs-10">
+                        <input type="text" class="form-control" id="inputCity" placeholder="Выберите город">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputPhone" class="col-xs-2 control-label">Телефон:</label>
+                    <div class="col-xs-10">
+                        <input type="email" class="form-control" id="inputPhone" placeholder="Введите телефон">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputEmail" class="col-xs-2 control-label">Email:</label>
+                    <div class="col-xs-10">
+                        <input type="email" class="form-control" id="inputEmail" placeholder="Введите email">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="inputComment" class="col-xs-2 control-label">Комментариий:</label>
+                    <div class="col-xs-10">
+                        <textarea class="form-control" id="inputComment" placeholder="Введите комментариий:"></textarea>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-xs-offset-2 col-xs-10">
+                        <button type="submit" class="btn btn-default">Отправить</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
