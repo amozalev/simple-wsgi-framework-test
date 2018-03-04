@@ -21,9 +21,9 @@ class Test(unittest.TestCase):
                           id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                           surname TEXT NOT NULL ,
                           name TEXT NOT NULL ,
-                          patronymic_name  TEXT NOT NULL ,
-                          phone  TEXT NOT NULL ,
-                          email TEXT NOT NULL,
+                          patronymic_name  TEXT ,
+                          phone  TEXT,
+                          email TEXT,
                           city_id INTEGER,
                           CONSTRAINT fk_city
                           FOREIGN KEY (city_id)

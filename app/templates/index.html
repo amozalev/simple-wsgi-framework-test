@@ -25,29 +25,31 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
-            <form class="form-horizontal">
+            <form id="saveCommentForm" class="form-horizontal" action="" method="POST">
                 <div class="form-group">
-                    <label for="inputSurname" class="col-xs-2 control-label">Фамилия:</label>
+                    <label for="inputSurname" class="col-xs-2 control-label">Фамилия (*):</label>
                     <div class="col-xs-10">
-                        <input type="text" class="form-control" id="inputSurname" placeholder="Введите фамилию">
+                        <input name="surname" type="text" class="form-control" id="inputSurname" placeholder="Иванов"
+                        >
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="inputName" class="col-xs-2 control-label">Имя:</label>
+                    <label for="inputName" class="col-xs-2 control-label">Имя (*):</label>
                     <div class="col-xs-10">
-                        <input type="text" class="form-control" id="inputName" placeholder="Введите имя">
+                        <input name="name" type="text" class="form-control" id="inputName" placeholder="Иван">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputPatronymicName" class="col-xs-2 control-label">Отчество:</label>
                     <div class="col-xs-10">
-                        <input type="text" class="form-control" id="inputPatronymicName" placeholder="Введите отчество">
+                        <input name="patronymic_name" type="text" class="form-control" id="inputPatronymicName"
+                               placeholder="Иванович">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputRegion" class="col-xs-2 control-label">Регион:</label>
                     <div class="col-xs-10">
-                        <select class="form-control" id="inputRegion">
+                        <select name="region" class="form-control" id="inputRegion">
                             <option>Выбор</option>
                         </select>
                     </div>
@@ -55,25 +57,29 @@
                 <div class="form-group">
                     <label for="inputCity" class="col-xs-2 control-label">Город:</label>
                     <div class="col-xs-10">
-                        <input type="text" class="form-control" id="inputCity" placeholder="Выберите город">
+                        <select name="city" class="form-control" id="inputCity">
+                            <option>Выбор</option>
+                        </select>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputPhone" class="col-xs-2 control-label">Телефон:</label>
                     <div class="col-xs-10">
-                        <input type="email" class="form-control" id="inputPhone" placeholder="Введите телефон">
+                        <input name="phone" type="tel" class="form-control" id="inputPhone" placeholder="+71234567890">
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputEmail" class="col-xs-2 control-label">Email:</label>
                     <div class="col-xs-10">
-                        <input type="email" class="form-control" id="inputEmail" placeholder="Введите email">
+                        <input name="email" type="email" class="form-control" id="inputEmail"
+                               placeholder="ivanov.ivan@example.com">
                     </div>
                 </div>
                 <div class="form-group">
-                    <label for="inputComment" class="col-xs-2 control-label">Комментариий:</label>
+                    <label for="inputComment" class="col-xs-2 control-label">Комментариий (*):</label>
                     <div class="col-xs-10">
-                        <textarea class="form-control" id="inputComment" placeholder="Введите комментариий:"></textarea>
+                        <textarea name="comment" class="form-control" id="inputComment"
+                                  placeholder="Введите комментариий:"></textarea>
                     </div>
                 </div>
                 <div class="form-group">
@@ -85,5 +91,15 @@
         </div>
     </div>
 </div>
+<script src="http://code.jquery.com/jquery-1.12.4.min.js"
+        integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+        crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
+<script type="text/javascript" src="/static/js/main.js"></script>
+<script>
+    $('#saveCommentForm').on("submit", saveComment);
+</script>
 </body>
 </html>
