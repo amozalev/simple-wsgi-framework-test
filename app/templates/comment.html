@@ -29,13 +29,13 @@
                     <label for="inputSurname" class="col-xs-2 control-label">Фамилия (*):</label>
                     <div class="col-xs-10">
                         <input name="surname" type="text" class="form-control" id="inputSurname" placeholder="Иванов"
-                        >
+                               required>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputName" class="col-xs-2 control-label">Имя (*):</label>
                     <div class="col-xs-10">
-                        <input name="name" type="text" class="form-control" id="inputName" placeholder="Иван">
+                        <input name="name" type="text" class="form-control" id="inputName" placeholder="Иван" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -48,16 +48,15 @@
                 <div class="form-group">
                     <label for="inputRegion" class="col-xs-2 control-label">Регион:</label>
                     <div class="col-xs-10">
-                        <select name="region" class="form-control" id="inputRegion">
-                            $regions
+                        <select name="region" class="form-control" id="inputRegion" required>
+                            <option selected disabled value=''>Выбрать</option>
                         </select>
                     </div>
                 </div>
                 <div class="form-group">
                     <label for="inputCity" class="col-xs-2 control-label">Город:</label>
                     <div class="col-xs-10">
-                        <select name="city" class="form-control" id="inputCity">
-                            $cities
+                        <select name="city" class="form-control" id="inputCity" disabled required>
                         </select>
                     </div>
                 </div>
@@ -78,7 +77,7 @@
                     <label for="inputComment" class="col-xs-2 control-label">Комментариий (*):</label>
                     <div class="col-xs-10">
                         <textarea name="comment" class="form-control" id="inputComment"
-                                  placeholder="Введите комментариий:"></textarea>
+                                  placeholder="Введите комментариий:" required></textarea>
                     </div>
                 </div>
                 <div class="form-group">
@@ -99,6 +98,28 @@
 <script type="text/javascript" src="/static/js/main.js"></script>
 <script>
     $('#saveCommentForm').on("submit", saveComment);
+</script>
+<script>
+    // $('#inputCity').attr("disabled");
+
+    var data = '$data';
+    var regions_and_cities = $.parseJSON(data);
+
+    $.each(regions_and_cities, function (k, v) {
+        $('#inputRegion').append($("<option></option>").attr("value", k).text(k));
+    });
+
+    $('select[name="region"]').on('change', function () {
+        console.log(regions_and_cities[$(this).val()]);
+        var cities_arr = regions_and_cities[$(this).val()];
+
+        $('#inputCity').find('option').remove();
+        $('#inputCity').removeAttr("disabled");
+
+        $.each(cities_arr, function (i, v) {
+            $('#inputCity').append($("<option></option>").attr("value", v).text(v));
+        });
+    });
 </script>
 </body>
 </html>

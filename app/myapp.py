@@ -39,9 +39,8 @@ class MyApp:
 
     def index(self, environ, start_response):
         print('index')
-        data = 'index data'
         self.headers['Content-Type'] = 'text/html'
-        return [data.encode('utf-8')]
+        return template_render('index.html')
 
     def comment(self, environ, start_response):
         # Отображение формы ввода комментариев
@@ -50,27 +49,21 @@ class MyApp:
 
         cursor = self.db.cursor()
         query = ('''SELECT r.name, c.name 
-                          FROM city c
-                          JOIN region r ON c.region_id = r.id
-                          ORDER BY r.name''')
+                    FROM city c
+                    JOIN region r ON c.region_id = r.id
+                    ORDER BY r.name''')
 
-        mapping_dict = dict()
-        mapping_dict['regions'] = ''
-        mapping_dict['cities'] = ''
         try:
             for i in cursor.execute(query):
-                if '<option>{}</option>'.format(i[0]) not in raw_data:
+                if i[0] not in raw_data:
                     arr = []
-                    raw_data['<option>{}</option>\n'.format(i[0])] = arr
-                raw_data['<option>{}</option>\n'.format(i[0])].append('<option>{}</option>\n'.format(i[1]))
+                    raw_data[i[0]] = arr
+                raw_data[i[0]].append(i[1])
 
         except sqlite3.Error as e:
             print('sqlite3.Error during request of existing regions and cities:', e)
 
-        for i in raw_data:
-            mapping_dict['regions'] += i
-            for j in raw_data[i]:
-                mapping_dict['cities'] += j
+        mapping_dict = {"data": json.dumps(raw_data, ensure_ascii=False)}
 
         self.headers['Content-Type'] = 'text/html'
         return template_render('comment.html', mapping_dict)
@@ -82,18 +75,24 @@ class MyApp:
         # body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
 
         cursor = self.db.cursor()
-        query = ('''SELECT c.body, u.name, u.surname
+        query = ('''SELECT c.body, u.name, u.surname, u.patronymic_name, c.id
                     FROM comment c
-                    JOIN user ON u.id = c.user_id
+                    JOIN user u ON u.id = c.user_id
                     ORDER BY 1''')
 
         mapping_dict = {}
+        mapping_dict['table'] = ''
+        mapping_dict[
+            'table'] += '<table class="table table-striped table-bordered"><tr><th></th><th>ФИО</th><th>Комментарий</th></tr>'
         try:
             for i in cursor.execute(query):
-                print(i)
-
+                mapping_dict[
+                    'table'] += '<tr><td><input name="commentid_{}" type="checkbox"/></td><td>{} {} {}</td><td>{}</td></tr>'. \
+                    format(i[4], i[1], i[2], i[3], i[0])
         except sqlite3.Error as e:
-            print('sqlite3.Error during request of existing regions and cities:', e)
+            print('sqlite3.Error during request of existing comments:', e)
+
+        mapping_dict['table'] += '</table>'
 
         self.headers['Content-Type'] = 'text/html'
         return template_render('view.html', mapping_dict)
@@ -103,7 +102,32 @@ class MyApp:
         print('stats')
         return 'view comments function'
 
+    # def cities_of_region(self, environ, start_response):
+    #     # self.is_post_request(environ, start_response)
+    #     if environ['REQUEST_METHOD'] != 'POST':
+    #         self.show_404(environ, start_response)
+    #
+    #     # for i in environ.items():
+    #     #     print(i)
+    #
+    #     try:
+    #         request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+    #     except ValueError:
+    #         request_body_size = 0
+    #     request_body = str(environ['wsgi.input'].read(request_body_size))
+    #     body = urllib.parse.parse_qs(request_body, keep_blank_values=True, encoding='utf-8')
+    #
+    #     print('========', body)
+    #
+    #     data = {'success': True}
+    #     body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
+    #
+    #     self.headers['Content-Type'] = 'application/json'
+    #     return [body]
+
     def save_comment(self, environ, start_response):
+        if environ['REQUEST_METHOD'] != 'POST':
+            self.show_404(environ, start_response)
 
         try:
             request_body_size = int(environ.get('CONTENT_LENGTH', 0))
@@ -116,64 +140,9 @@ class MyApp:
         for i in body:
             data[i.replace('b\'', '')] = body[i][0]
 
-        if 'surname' and 'name' in data:
-            # ---------------------- Проверка есть ли уже такой регион ---------------------------
-            try:
-                cursor = self.db.cursor()
-                cursor.execute('SELECT id FROM region WHERE name = ?', (data["region"],))
-                self.db.commit()
-            except sqlite3.Error as e:
-                self.db.rollback()
-                print('sqlite3.Error during region existence check:', e)
-
-            if cursor.fetchone() is None:
-                try:
-                    cursor.execute('INSERT INTO region(name) VALUES(?)', (data["region"],))
-                    self.db.commit()
-                except sqlite3.Error as e:
-                    self.db.rollback()
-                    print('sqlite3.Error during region insert:', e)
-
-            # ------------ Проверка есть ли уже такой город, получение id созданного региона, добавл. города --------
-            try:
-                cursor.execute('SELECT id FROM city WHERE name = ?', (data["city"],))
-                self.db.commit()
-            except sqlite3.Error as e:
-                self.db.rollback()
-                print('sqlite3.Error during city existence check:', e)
-
-            if cursor.fetchone() is None:
-                try:
-                    cursor.execute('SELECT id FROM region WHERE name = ?', (data["region"],))
-                    self.db.commit()
-                except sqlite3.Error as e:
-                    self.db.rollback()
-                    print('sqlite3.Error during region existence check:', e)
-
-                region_id = cursor.fetchone()[0]
-
-                try:
-                    cursor.execute('INSERT INTO city(name, region_id) VALUES(?, ?)', (data["city"], region_id))
-                    self.db.commit()
-                except sqlite3.Error as e:
-                    self.db.rollback()
-                    print('sqlite3.Error during city insert:', e)
-
-            # ---------------------- Получение id добавленного города------- ------------------
-            try:
-                cursor.execute('''SELECT city.id
-                                  FROM city
-                                  JOIN region ON city.region_id = region.id
-                                  WHERE city.name = ? AND region.name = ?''',
-                               (data["city"], data["region"]))
-                self.db.commit()
-            except sqlite3.Error as e:
-                self.db.rollback()
-                print('sqlite3.Error during city existence check:', e)
-
-            city_id = cursor.fetchone()[0]
-
-            # ---------------------- Проверка наличия пользователя. Если нет, добавление ---------------
+        if ('surname', 'name', 'region', 'comment') in data:
+            # ---------------------- Проверка наличия пользователя. Если нет, то добавление ---------------
+            cursor = self.db.cursor()
             try:
                 cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
                                (data["surname"], data["name"]))
@@ -183,6 +152,21 @@ class MyApp:
                 print('sqlite3.Error during user existence check:', e)
 
             if cursor.fetchone() is None:
+                # ---------------------- Получение id города---------------------
+                try:
+                    cursor.execute('''SELECT city.id
+                                      FROM city
+                                      JOIN region ON city.region_id = region.id
+                                      WHERE city.name = ? AND region.name = ?''',
+                                   (data["city"], data["region"]))
+                    self.db.commit()
+                except sqlite3.Error as e:
+                    self.db.rollback()
+                    print('sqlite3.Error during city existence check:', e)
+
+                city_id = cursor.fetchone()[0]
+
+                # ---------------------- Сохранение нового пользователя ---------------------
                 try:
                     cursor.execute('''INSERT INTO user(surname, name, patronymic_name, phone, email, city_id)
                                         VALUES (?, ?, ?, ?, ?, ?)''',
@@ -248,6 +232,10 @@ class MyApp:
     def show_404(self, environ, start_response):
         self.headers['Content-Type'] = 'text/html'
         return template_render('404.html')
+
+    def is_post_request(self, environ, start_response):
+        if environ['REQUEST_METHOD'] != 'POST':
+            self.show_404(environ, start_response)
 
     def serve(self, environ, start_response):
         urls = [

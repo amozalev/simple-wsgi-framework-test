@@ -4,6 +4,8 @@ import config
 
 
 def render_from_string(template_string, mapping):
+    if mapping is None:
+        mapping = {}
     template = Template(template_string)
     result = template.safe_substitute(**mapping)
     return [result.encode("utf-8")]
