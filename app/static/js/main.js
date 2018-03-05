@@ -12,10 +12,15 @@ function saveComment(e) {
         url: '/save_comment',
         data: arr,
         success: function (data) {
-            console.log('success', data);
+            $("#saveCommentResult p").text(data.msg);
+            $("#saveCommentResult p").fadeIn(500);
+            $("#saveCommentResult p").fadeOut(2000);
         },
         error: function (data, jqXHR, textStatus, errorThrown) {
             console.log(data, jqXHR, textStatus, errorThrown);
+            $("#saveCommentResult p").text('При сохранении возникла ошибка');
+            $("#saveCommentResult p").fadeOut(2000);
+            $("#saveCommentResult p").fadeOut(2000);
         }
     });
 }

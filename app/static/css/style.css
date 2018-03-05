@@ -14,3 +14,13 @@ a {
     padding: 0 10px;
     float: left;
 }
+
+#saveCommentResult {
+    float: right;
+}
+
+#saveCommentResult p {
+    padding: 6px 12px;
+    color: green;
+    display: none;
+}

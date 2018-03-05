@@ -102,29 +102,6 @@ class MyApp:
         print('stats')
         return 'view comments function'
 
-    # def cities_of_region(self, environ, start_response):
-    #     # self.is_post_request(environ, start_response)
-    #     if environ['REQUEST_METHOD'] != 'POST':
-    #         self.show_404(environ, start_response)
-    #
-    #     # for i in environ.items():
-    #     #     print(i)
-    #
-    #     try:
-    #         request_body_size = int(environ.get('CONTENT_LENGTH', 0))
-    #     except ValueError:
-    #         request_body_size = 0
-    #     request_body = str(environ['wsgi.input'].read(request_body_size))
-    #     body = urllib.parse.parse_qs(request_body, keep_blank_values=True, encoding='utf-8')
-    #
-    #     print('========', body)
-    #
-    #     data = {'success': True}
-    #     body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
-    #
-    #     self.headers['Content-Type'] = 'application/json'
-    #     return [body]
-
     def save_comment(self, environ, start_response):
         if environ['REQUEST_METHOD'] != 'POST':
             self.show_404(environ, start_response)
@@ -140,68 +117,65 @@ class MyApp:
         for i in body:
             data[i.replace('b\'', '')] = body[i][0]
 
-        if ('surname', 'name', 'region', 'comment') in data:
-            # ---------------------- Проверка наличия пользователя. Если нет, то добавление ---------------
-            cursor = self.db.cursor()
+        # ---------------------- Проверка наличия пользователя. Если нет, то добавление ---------------
+        cursor = self.db.cursor()
+        try:
+            cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
+                           (data["surname"], data["name"]))
+            self.db.commit()
+        except sqlite3.Error as e:
+            self.db.rollback()
+            print('sqlite3.Error during user existence check:', e)
+
+        if cursor.fetchone() is None:
+            # ---------------------- Получение id города---------------------
             try:
-                cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
-                               (data["surname"], data["name"]))
+                cursor.execute('''SELECT city.id
+                                  FROM city
+                                  JOIN region ON city.region_id = region.id
+                                  WHERE city.name = ? AND region.name = ?''',
+                               (data["city"], data["region"]))
                 self.db.commit()
             except sqlite3.Error as e:
                 self.db.rollback()
-                print('sqlite3.Error during user existence check:', e)
+                print('sqlite3.Error during city existence check:', e)
 
-            if cursor.fetchone() is None:
-                # ---------------------- Получение id города---------------------
-                try:
-                    cursor.execute('''SELECT city.id
-                                      FROM city
-                                      JOIN region ON city.region_id = region.id
-                                      WHERE city.name = ? AND region.name = ?''',
-                                   (data["city"], data["region"]))
-                    self.db.commit()
-                except sqlite3.Error as e:
-                    self.db.rollback()
-                    print('sqlite3.Error during city existence check:', e)
+            city_id = cursor.fetchone()[0]
 
-                city_id = cursor.fetchone()[0]
-
-                # ---------------------- Сохранение нового пользователя ---------------------
-                try:
-                    cursor.execute('''INSERT INTO user(surname, name, patronymic_name, phone, email, city_id)
-                                        VALUES (?, ?, ?, ?, ?, ?)''',
-                                   (data["surname"],
-                                    data["name"],
-                                    data["patronymic_name"],
-                                    data["phone"],
-                                    data["email"],
-                                    city_id))
-                    self.db.commit()
-                except sqlite3.Error as e:
-                    self.db.rollback()
-                    print('sqlite3.Error during user insert:', e)
-
+            # ---------------------- Сохранение нового пользователя ---------------------
             try:
-                cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
-                               (data["surname"], data["name"]))
+                cursor.execute('''INSERT INTO user(surname, name, patronymic_name, phone, email, city_id)
+                                    VALUES (?, ?, ?, ?, ?, ?)''',
+                               (data["surname"],
+                                data["name"],
+                                data["patronymic_name"],
+                                data["phone"],
+                                data["email"],
+                                city_id))
                 self.db.commit()
             except sqlite3.Error as e:
                 self.db.rollback()
-                print('sqlite3.Error during reception of user_id:', e)
+                print('sqlite3.Error during user insert:', e)
 
-            user_id = cursor.fetchone()[0]
+        try:
+            cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
+                           (data["surname"], data["name"]))
+            self.db.commit()
+        except sqlite3.Error as e:
+            self.db.rollback()
+            print('sqlite3.Error during reception of user_id:', e)
 
-            # ---------------------- Сохранение комментария ------------------
-            try:
-                cursor.execute('INSERT INTO comment(body, user_id) VALUES(?, ?)', (data["comment"], user_id))
-                self.db.commit()
-            except sqlite3.Error as e:
-                self.db.rollback()
-                print('sqlite3.Error during comment insert:', e)
+        user_id = cursor.fetchone()[0]
 
-            data = {'success': True, 'msg': 'Комментарий успешно добавлен.'}
-        else:
-            data = {'success': False, 'msg': 'Фамилия и имя должны быть заполнены.'}
+        # ---------------------- Сохранение комментария ------------------
+        try:
+            cursor.execute('INSERT INTO comment(body, user_id) VALUES(?, ?)', (data["comment"], user_id))
+            self.db.commit()
+        except sqlite3.Error as e:
+            self.db.rollback()
+            print('sqlite3.Error during comment insert:', e)
+
+        data = {'success': True, 'msg': 'Комментарий успешно добавлен'}
 
         body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
 
