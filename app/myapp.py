@@ -17,10 +17,11 @@ class MyApp:
                            '.css': 'text/css',
                            '.js': 'application/javascript',
                            }
+
         try:
             self.db = sqlite3.connect('sqlite.db')
-        except sqlite3.Error:
-            print("Error")
+        except sqlite3.Error as e:
+            print('sqlite3.Error during db connection:', e)
 
     def __call__(self, environ, start_response):
         body = self.serve(environ, start_response)
@@ -42,21 +43,60 @@ class MyApp:
         self.headers['Content-Type'] = 'text/html'
         return [data.encode('utf-8')]
 
-    def comments(self, environ, start_response):
+    def comment(self, environ, start_response):
         # Отображение формы ввода комментариев
-        print('comments')
+        print('comment')
+        raw_data = {}
+
+        cursor = self.db.cursor()
+        query = ('''SELECT r.name, c.name 
+                          FROM city c
+                          JOIN region r ON c.region_id = r.id
+                          ORDER BY r.name''')
+
+        mapping_dict = dict()
+        mapping_dict['regions'] = ''
+        mapping_dict['cities'] = ''
+        try:
+            for i in cursor.execute(query):
+                if '<option>{}</option>'.format(i[0]) not in raw_data:
+                    arr = []
+                    raw_data['<option>{}</option>\n'.format(i[0])] = arr
+                raw_data['<option>{}</option>\n'.format(i[0])].append('<option>{}</option>\n'.format(i[1]))
+
+        except sqlite3.Error as e:
+            print('sqlite3.Error during request of existing regions and cities:', e)
+
+        for i in raw_data:
+            mapping_dict['regions'] += i
+            for j in raw_data[i]:
+                mapping_dict['cities'] += j
+
         self.headers['Content-Type'] = 'text/html'
-        return template_render('index.html')
+        return template_render('comment.html', mapping_dict)
 
     def view(self, environ, start_response):
         # Отображение комментариев
         print('view func')
-        self.headers['Content-Type'] = 'application/json'
-        data = {"Hello World": 2}
-        body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
+        # data = {"Hello World": 2}
+        # body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
 
-        # start_response(self.status, list(self.headers.items()))
-        return [body]
+        cursor = self.db.cursor()
+        query = ('''SELECT c.body, u.name, u.surname
+                    FROM comment c
+                    JOIN user ON u.id = c.user_id
+                    ORDER BY 1''')
+
+        mapping_dict = {}
+        try:
+            for i in cursor.execute(query):
+                print(i)
+
+        except sqlite3.Error as e:
+            print('sqlite3.Error during request of existing regions and cities:', e)
+
+        self.headers['Content-Type'] = 'text/html'
+        return template_render('view.html', mapping_dict)
 
     def stat(self, environ, start_response):
         # Отображение таблица со списком тех регионов, у которых количество комментариев больше 5,
@@ -75,7 +115,6 @@ class MyApp:
         data = {}
         for i in body:
             data[i.replace('b\'', '')] = body[i][0]
-        # print(data, type(data))
 
         if 'surname' and 'name' in data:
             # ---------------------- Проверка есть ли уже такой регион ---------------------------
@@ -213,7 +252,7 @@ class MyApp:
     def serve(self, environ, start_response):
         urls = [
             ('', self.index),
-            ('comments', self.comments),
+            ('comment', self.comment),
             ('view', self.view),
             ('stat', self.stat),
             ('save_comment', self.save_comment)

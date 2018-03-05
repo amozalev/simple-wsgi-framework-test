@@ -16,7 +16,6 @@
     <div class="container-fluid">
         <div class="navbar-header">
             <h1><a href="/">Главная</a></h1>
-            <a href="/comments">Добавить комментарий</a>
             <a href="/view">Все комментарии</a>
             <a href="/stat">Таблица регионов</a>
         </div>
@@ -50,7 +49,7 @@
                     <label for="inputRegion" class="col-xs-2 control-label">Регион:</label>
                     <div class="col-xs-10">
                         <select name="region" class="form-control" id="inputRegion">
-                            <option>Выбор</option>
+                            $regions
                         </select>
                     </div>
                 </div>
@@ -58,7 +57,7 @@
                     <label for="inputCity" class="col-xs-2 control-label">Город:</label>
                     <div class="col-xs-10">
                         <select name="city" class="form-control" id="inputCity">
-                            <option>Выбор</option>
+                            $cities
                         </select>
                     </div>
                 </div>

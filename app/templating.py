@@ -5,7 +5,7 @@ import config
 
 def render_from_string(template_string, mapping):
     template = Template(template_string)
-    result = template.safe_substitute(mapping)
+    result = template.safe_substitute(**mapping)
     return [result.encode("utf-8")]
 
 
@@ -19,4 +19,5 @@ def template_render(templatename, mapping=None):
     template = h.read()
     h.close()
 
-    return [template.encode("utf-8")]
+    # return [template.encode("utf-8")]
+    return render_from_string(template, mapping)
