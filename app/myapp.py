@@ -98,36 +98,63 @@ class MyApp:
         return template_render('view.html', mapping_dict)
 
     def stat(self, environ, start_response):
-        # Отображение таблица со списком тех регионов, у которых количество комментариев больше 5,
+        # Отображение таблица со списком тех регионов, у которых количество комментариев больше 5
         print('stat')
-        print(environ['PATH_INFO'])
+        path_parts = (environ['PATH_INFO']).split('/')
 
         cursor = self.db.cursor()
-        query = ('''SELECT r.id, r.name, count(co.id)
-                    FROM region r
-                    JOIN city ci ON r.id = ci.region_id
-                    JOIN "user" u ON ci.id = u.city_id
-                    JOIN comment co ON co.user_id = u.id
-                    GROUP BY r.name
-                    HAVING count(co.id) > 1
-                    ''')
-
         mapping_dict = dict()
-        mapping_dict['table1'] = ''
-        mapping_dict['table2'] = ''
+        mapping_dict['table'] = ''
 
-        mapping_dict[
-            'table1'] += '<table class="table table-striped table-bordered"><tr><th>Регион</th><th>Кол-во комментариев</th></tr>'
-        try:
-            for i in cursor.execute(query):
-                mapping_dict[
-                    'table1'] += '<tr><td><a href="/stat/{}">{}</a></td><td>{}</td></tr>'. \
-                    format(i[0], i[1], i[2])
-        except sqlite3.Error as e:
-            print('sqlite3.Error during request of regions and comments amount:', e)
+        # Если есть цифра в ссылке, то отображаются города
+        if path_parts[-1].isdigit():
+            region_id = int(path_parts[-1])
+            print(region_id)
+            query = ('''SELECT ci.name, count(co.id)
+                        FROM city ci
+                        JOIN "user" u ON ci.id = u.city_id
+                        JOIN comment co ON co.user_id = u.id
+                        WHERE ci.region_id = ?
+                        GROUP BY ci.name
+                        ORDER BY ci.name
+                        ''')
 
-        mapping_dict['table1'] += '</table>'
+            mapping_dict[
+                'table'] += '<table class="table table-striped table-bordered"><tr><th>Город</th><th>Кол-во комментариев</th></tr>'
 
+            try:
+                for i in cursor.execute(query, (region_id,)):
+                    mapping_dict[
+                        'table'] += '<tr><td>{}</td><td>{}</td></tr>'. \
+                        format(i[0], i[1])
+            except sqlite3.Error as e:
+                print('sqlite3.Error during request of regions and comments amount:', e)
+
+
+        # Отображаются регионы
+        else:
+            query = ('''SELECT r.id, r.name, count(co.id)
+                        FROM region r
+                        JOIN city ci ON r.id = ci.region_id
+                        JOIN "user" u ON ci.id = u.city_id
+                        JOIN comment co ON co.user_id = u.id
+                        GROUP BY r.name
+                        HAVING count(co.id) > 1
+                        ORDER BY r.name 
+                        ''')
+
+            mapping_dict[
+                'table'] += '<table class="table table-striped table-bordered"><tr><th>Регион</th><th>Кол-во комментариев</th></tr>'
+
+            try:
+                for i in cursor.execute(query):
+                    mapping_dict[
+                        'table'] += '<tr><td><a href="/stat/{}">{}</a></td><td>{}</td></tr>'. \
+                        format(i[0], i[1], i[2])
+            except sqlite3.Error as e:
+                print('sqlite3.Error during request of regions and comments amount:', e)
+
+        mapping_dict['table'] += '</table>'
 
         self.headers['Content-Type'] = 'text/html'
         return template_render('stat.html', mapping_dict)
