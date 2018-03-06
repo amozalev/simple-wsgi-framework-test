@@ -4,15 +4,17 @@
 
 .navbar-header {
     width: 100%;
-}
-
-h1 {
-    font-size: 24px;
+    margin-top: 10px;
 }
 
 a {
     padding: 0 10px;
     float: left;
+    font-size: 16px;
+}
+
+td a {
+    padding: 0;
 }
 
 #saveCommentResult {

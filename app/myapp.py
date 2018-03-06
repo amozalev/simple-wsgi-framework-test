@@ -1,6 +1,6 @@
 import json
 import os
-# import re
+import re
 from .templating import template_render
 import urllib.parse
 import sqlite3
@@ -99,8 +99,38 @@ class MyApp:
 
     def stat(self, environ, start_response):
         # Отображение таблица со списком тех регионов, у которых количество комментариев больше 5,
-        print('stats')
-        return 'view comments function'
+        print('stat')
+        print(environ['PATH_INFO'])
+
+        cursor = self.db.cursor()
+        query = ('''SELECT r.id, r.name, count(co.id)
+                    FROM region r
+                    JOIN city ci ON r.id = ci.region_id
+                    JOIN "user" u ON ci.id = u.city_id
+                    JOIN comment co ON co.user_id = u.id
+                    GROUP BY r.name
+                    HAVING count(co.id) > 1
+                    ''')
+
+        mapping_dict = dict()
+        mapping_dict['table1'] = ''
+        mapping_dict['table2'] = ''
+
+        mapping_dict[
+            'table1'] += '<table class="table table-striped table-bordered"><tr><th>Регион</th><th>Кол-во комментариев</th></tr>'
+        try:
+            for i in cursor.execute(query):
+                mapping_dict[
+                    'table1'] += '<tr><td><a href="/stat/{}">{}</a></td><td>{}</td></tr>'. \
+                    format(i[0], i[1], i[2])
+        except sqlite3.Error as e:
+            print('sqlite3.Error during request of regions and comments amount:', e)
+
+        mapping_dict['table1'] += '</table>'
+
+
+        self.headers['Content-Type'] = 'text/html'
+        return template_render('stat.html', mapping_dict)
 
     def save_comment(self, environ, start_response):
         if environ['REQUEST_METHOD'] != 'POST':
@@ -204,8 +234,11 @@ class MyApp:
         return [content]
 
     def show_404(self, environ, start_response):
+        mapping_dict = dict()
+        mapping_dict['data'] = '<h1>404</h1><p>Страница не надена. Пожалуйста, перейдите по одной из ссылок в меню.</p>'
+
         self.headers['Content-Type'] = 'text/html'
-        return template_render('404.html')
+        return template_render('index.html', mapping_dict)
 
     def is_post_request(self, environ, start_response):
         if environ['REQUEST_METHOD'] != 'POST':
@@ -213,19 +246,20 @@ class MyApp:
 
     def serve(self, environ, start_response):
         urls = [
-            ('', self.index),
-            ('comment', self.comment),
-            ('view', self.view),
-            ('stat', self.stat),
-            ('save_comment', self.save_comment)
+            (r'^$', self.index),
+            (r'comment', self.comment),
+            (r'view', self.view),
+            (r'stat/?$', self.stat),
+            (r'stat/(.+)$', self.stat),
+            (r'save_comment', self.save_comment)
         ]
 
         path = environ.get('PATH_INFO', '').lstrip('/')
 
         for key, func in urls:
-            # match = re.search(key, path)
-            if path == key:
-                # if match is not None:
+            match = re.search(key, path)
+            # if path == key:
+            if match is not None:
                 return func(environ, start_response)
             elif environ['PATH_INFO'].startswith(config.STATIC_URL_PREFIX):
                 # if not os.path.exists(path):
