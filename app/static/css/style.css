@@ -17,12 +17,18 @@ td a {
     padding: 0;
 }
 
-#saveCommentResult {
+#commentActionResult {
     float: right;
 }
 
-#saveCommentResult p {
+#commentActionResult p {
     padding: 6px 12px;
     color: green;
     display: none;
 }
+
+/*#deleteCommentResult p {*/
+    /*padding: 6px 12px;*/
+    /*color: red;*/
+    /*display: none;*/
+/*}*/

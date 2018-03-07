@@ -39,8 +39,10 @@ class MyApp:
 
     def index(self, environ, start_response):
         print('index')
+        mapping_dict = {"data": ''}
+
         self.headers['Content-Type'] = 'text/html'
-        return template_render('index.html')
+        return template_render('index.html', mapping_dict)
 
     def comment(self, environ, start_response):
         # Отображение формы ввода комментариев
@@ -82,13 +84,13 @@ class MyApp:
 
         mapping_dict = {}
         mapping_dict['table'] = ''
-        mapping_dict[
-            'table'] += '<table class="table table-striped table-bordered"><tr><th></th><th>ФИО</th><th>Комментарий</th></tr>'
+        mapping_dict['table'] += '''<table class="table table-striped table-bordered">
+                                        <tr><th></th><th>ФИО</th><th>Комментарий</th></tr>'''
         try:
             for i in cursor.execute(query):
-                mapping_dict[
-                    'table'] += '<tr><td><input name="commentid_{}" type="checkbox"/></td><td>{} {} {}</td><td>{}</td></tr>'. \
-                    format(i[4], i[1], i[2], i[3], i[0])
+                mapping_dict['table'] += '''<tr id="row_id_{}"><td><input name="comment_id_{}" value="{}" type="checkbox"/></td>
+                                            <td>{} {} {}</td><td>{}</td></tr>'''. \
+                    format(i[4], i[4], i[4], i[1], i[2], i[3], i[0])
         except sqlite3.Error as e:
             print('sqlite3.Error during request of existing comments:', e)
 
@@ -119,13 +121,12 @@ class MyApp:
                         ORDER BY ci.name
                         ''')
 
-            mapping_dict[
-                'table'] += '<table class="table table-striped table-bordered"><tr><th>Город</th><th>Кол-во комментариев</th></tr>'
+            mapping_dict['table'] += '''<table class="table table-striped table-bordered">
+                                        <tr><th>Город</th><th>Кол-во комментариев</th></tr>'''
 
             try:
                 for i in cursor.execute(query, (region_id,)):
-                    mapping_dict[
-                        'table'] += '<tr><td>{}</td><td>{}</td></tr>'. \
+                    mapping_dict['table'] += '<tr><td>{}</td><td>{}</td></tr>'. \
                         format(i[0], i[1])
             except sqlite3.Error as e:
                 print('sqlite3.Error during request of regions and comments amount:', e)
@@ -143,13 +144,12 @@ class MyApp:
                         ORDER BY r.name 
                         ''')
 
-            mapping_dict[
-                'table'] += '<table class="table table-striped table-bordered"><tr><th>Регион</th><th>Кол-во комментариев</th></tr>'
+            mapping_dict['table'] += '''<table class="table table-striped table-bordered">
+                                        <tr><th>Регион</th><th>Кол-во комментариев</th></tr>'''
 
             try:
                 for i in cursor.execute(query):
-                    mapping_dict[
-                        'table'] += '<tr><td><a href="/stat/{}">{}</a></td><td>{}</td></tr>'. \
+                    mapping_dict['table'] += '<tr><td><a href="/stat/{}">{}</a></td><td>{}</td></tr>'. \
                         format(i[0], i[1], i[2])
             except sqlite3.Error as e:
                 print('sqlite3.Error during request of regions and comments amount:', e)
@@ -170,15 +170,15 @@ class MyApp:
         request_body = str(environ['wsgi.input'].read(request_body_size))
         body = urllib.parse.parse_qs(request_body, keep_blank_values=True, encoding='utf-8')
 
-        data = {}
+        msg = {}
         for i in body:
-            data[i.replace('b\'', '')] = body[i][0]
+            msg[i.replace('b\'', '')] = body[i][0]
 
         # ---------------------- Проверка наличия пользователя. Если нет, то добавление ---------------
         cursor = self.db.cursor()
         try:
             cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
-                           (data["surname"], data["name"]))
+                           (msg["surname"], msg["name"]))
             self.db.commit()
         except sqlite3.Error as e:
             self.db.rollback()
@@ -191,7 +191,7 @@ class MyApp:
                                   FROM city
                                   JOIN region ON city.region_id = region.id
                                   WHERE city.name = ? AND region.name = ?''',
-                               (data["city"], data["region"]))
+                               (msg["city"], msg["region"]))
                 self.db.commit()
             except sqlite3.Error as e:
                 self.db.rollback()
@@ -203,11 +203,11 @@ class MyApp:
             try:
                 cursor.execute('''INSERT INTO user(surname, name, patronymic_name, phone, email, city_id)
                                     VALUES (?, ?, ?, ?, ?, ?)''',
-                               (data["surname"],
-                                data["name"],
-                                data["patronymic_name"],
-                                data["phone"],
-                                data["email"],
+                               (msg["surname"],
+                                msg["name"],
+                                msg["patronymic_name"],
+                                msg["phone"],
+                                msg["email"],
                                 city_id))
                 self.db.commit()
             except sqlite3.Error as e:
@@ -216,7 +216,7 @@ class MyApp:
 
         try:
             cursor.execute('SELECT id FROM user WHERE surname = ? AND name = ?',
-                           (data["surname"], data["name"]))
+                           (msg["surname"], msg["name"]))
             self.db.commit()
         except sqlite3.Error as e:
             self.db.rollback()
@@ -226,15 +226,52 @@ class MyApp:
 
         # ---------------------- Сохранение комментария ------------------
         try:
-            cursor.execute('INSERT INTO comment(body, user_id) VALUES(?, ?)', (data["comment"], user_id))
+            cursor.execute('INSERT INTO comment(body, user_id) VALUES(?, ?)', (msg["comment"], user_id))
             self.db.commit()
         except sqlite3.Error as e:
             self.db.rollback()
             print('sqlite3.Error during comment insert:', e)
 
-        data = {'success': True, 'msg': 'Комментарий успешно добавлен'}
+        msg = {'success': True, 'msg': 'Комментарий успешно добавлен'}
 
-        body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
+        body = json.dumps(msg, sort_keys=True, indent=4).encode("utf-8")
+
+        self.headers['Content-Type'] = 'application/json'
+        return [body]
+
+    def delete_comment(self, environ, start_response):
+        print('delete_comment')
+        if environ['REQUEST_METHOD'] != 'POST':
+            self.show_404(environ, start_response)
+
+        try:
+            request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+        except ValueError:
+            request_body_size = 0
+        request_body = str(environ['wsgi.input'].read(request_body_size))
+        body = urllib.parse.parse_qs(request_body, keep_blank_values=True, encoding='utf-8')
+
+        data = {}
+        for i in body:
+            data[i.replace('b\'', '')] = ((body[i][0]).replace('\'', ''),)
+        print(data)
+
+        msg = {}
+        deleted_comment_id = list(data.values())
+        print(deleted_comment_id)
+
+        cursor = self.db.cursor()
+        try:
+            cursor.executemany('DELETE FROM comment WHERE id = ?', deleted_comment_id)
+            self.db.commit()
+            msg = {'success': True, 'msg': 'Комментарии успешно удалены', 'deleted_comment_id': deleted_comment_id}
+
+        except sqlite3.Error as e:
+            self.db.rollback()
+            print('sqlite3.Error during comments deletion:', e)
+            msg = {'success': True, 'msg': 'Произошла ошибка', 'deleted_comment_id': deleted_comment_id}
+
+        body = json.dumps(msg, sort_keys=True, indent=4).encode("utf-8")
 
         self.headers['Content-Type'] = 'application/json'
         return [body]
@@ -274,11 +311,12 @@ class MyApp:
     def serve(self, environ, start_response):
         urls = [
             (r'^$', self.index),
-            (r'comment', self.comment),
+            (r'^comment', self.comment),
             (r'view', self.view),
             (r'stat/?$', self.stat),
             (r'stat/(.+)$', self.stat),
-            (r'save_comment', self.save_comment)
+            (r'save_comment', self.save_comment),
+            (r'delete_comment', self.delete_comment)
         ]
 
         path = environ.get('PATH_INFO', '').lstrip('/')
