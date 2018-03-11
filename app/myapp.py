@@ -20,7 +20,7 @@ class MyApp:
         self.environ = {}
 
         try:
-            self.db = sqlite3.connect('sqlite.db')
+            self.db = sqlite3.connect(config.DB_NAME)
         except sqlite3.Error as e:
             print('sqlite3.Error during db connection:', e)
 

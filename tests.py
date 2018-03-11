@@ -1,6 +1,7 @@
 import unittest
 import sqlite3
 import random
+import config
 from faker import Faker
 
 
@@ -8,7 +9,7 @@ class Test(unittest.TestCase):
     def setUp(self):
         self.db = None
         try:
-            self.db = sqlite3.connect('sqlite.db')
+            self.db = sqlite3.connect(config.DB_NAME)
         except sqlite3.Error:
             print("Error")
         cursor = self.db.cursor()
@@ -55,9 +56,7 @@ class Test(unittest.TestCase):
 
     def test_insert_fake_data(self):
         fake = Faker('ru_RU')
-        regions = {'Краснодарский край': {'Краснодар', 'Кропоткин', 'Славянск'},
-                   'Ростовская область': {'Ростов', 'Шахты', 'Батайск'},
-                   'Ставропольский край': {'Ставрополь', 'Пятигорск', 'Кисловодск'}}
+        regions = config.REGIONS_AND_CITIES
 
         cursor = self.db.cursor()
         i = 1
