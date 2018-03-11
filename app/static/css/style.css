@@ -25,10 +25,9 @@ td a {
     padding: 6px 12px;
     color: green;
     display: none;
+    text-align: right;
 }
 
-/*#deleteCommentResult p {*/
-    /*padding: 6px 12px;*/
-    /*color: red;*/
-    /*display: none;*/
-/*}*/
+#sendCommentBtn {
+    float: left;
+}

@@ -55,29 +55,24 @@ class Test(unittest.TestCase):
 
     def test_insert_fake_data(self):
         fake = Faker('ru_RU')
-        regions = {'Краснодарский край': 0, 'Ростовская область': 1, 'Ставропольский край': 2}
+        regions = {'Краснодарский край': {'Краснодар', 'Кропоткин', 'Славянск'},
+                   'Ростовская область': {'Ростов', 'Шахты', 'Батайск'},
+                   'Ставропольский край': {'Ставрополь', 'Пятигорск', 'Кисловодск'}}
 
         cursor = self.db.cursor()
-        # ------------ Добавление регионов в region: ----------------------------------
+        i = 1
+        # ------------ Добавление регионов и городов в region и city: ----------------------------------
         try:
             for key in regions.keys():
                 cursor.execute('INSERT INTO region(name) VALUES(?);', (key,))
-            self.db.commit()
+                for value in regions[key]:
+                    print(key, value)
+                    cursor.execute('INSERT INTO city(name, region_id) VALUES(?, ?);', (value, i))
+                self.db.commit()
+                i += 1
         except sqlite3.Error as e:
             self.db.rollback()
             print('sqlite3.Error during region insertion:', e)
-
-        # ------------ Добавление нас. пунктов в city: ----------------------------------
-        try:
-            for _ in range(10):
-                city = fake.city()
-                region_id = random.randint(1, len(regions))
-
-                cursor.execute('INSERT INTO city(name, region_id) VALUES(?, ?);', (city, region_id))
-            self.db.commit()
-        except sqlite3.Error as e:
-            self.db.rollback()
-            print('sqlite3.Error during city insertion:', e)
 
         # ------------ Добавление пользователей в user: ----------------------------------
         try:
@@ -87,7 +82,7 @@ class Test(unittest.TestCase):
                 patronymic_name = "Отчество"
                 phone = fake.phone_number()
                 email = fake.safe_email()
-                city_id = random.randint(1, 10)
+                city_id = random.randint(1, 9)
 
                 cursor.execute('''INSERT INTO user(surname, name, patronymic_name, phone, email, city_id) 
                                   VALUES(?, ?, ?, ?, ?, ?)''',

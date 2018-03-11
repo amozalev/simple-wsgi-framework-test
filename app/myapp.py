@@ -17,6 +17,7 @@ class MyApp:
                            '.css': 'text/css',
                            '.js': 'application/javascript',
                            }
+        self.environ = {}
 
         try:
             self.db = sqlite3.connect('sqlite.db')
@@ -24,29 +25,19 @@ class MyApp:
             print('sqlite3.Error during db connection:', e)
 
     def __call__(self, environ, start_response):
-        body = self.serve(environ, start_response)
-
-        # self.headers['Content-length'] = str(len(body))
+        body = self.serve(environ)
+        print(body)
         start_response(self.status, list(self.headers.items()))
         return body
 
-    # def route(self, route):
-    #     def wrapper(func):
-    #         self.routes[route] = func
-    #         return func
-    #
-    #     return wrapper
-
-    def index(self, environ, start_response):
-        print('index')
+    def index(self, environ):
         mapping_dict = {"data": ''}
 
         self.headers['Content-Type'] = 'text/html'
         return template_render('index.html', mapping_dict)
 
-    def comment(self, environ, start_response):
+    def comment(self, environ):
         # Отображение формы ввода комментариев
-        print('comment')
         raw_data = {}
 
         cursor = self.db.cursor()
@@ -70,19 +61,15 @@ class MyApp:
         self.headers['Content-Type'] = 'text/html'
         return template_render('comment.html', mapping_dict)
 
-    def view(self, environ, start_response):
+    def view(self, environ):
         # Отображение комментариев
-        print('view func')
-        # data = {"Hello World": 2}
-        # body = json.dumps(data, sort_keys=True, indent=4).encode("utf-8")
-
         cursor = self.db.cursor()
         query = ('''SELECT c.body, u.name, u.surname, u.patronymic_name, c.id
                     FROM comment c
                     JOIN user u ON u.id = c.user_id
                     ORDER BY 1''')
 
-        mapping_dict = {}
+        mapping_dict = dict()
         mapping_dict['table'] = ''
         mapping_dict['table'] += '''<table class="table table-striped table-bordered">
                                         <tr><th></th><th>ФИО</th><th>Комментарий</th></tr>'''
@@ -99,9 +86,8 @@ class MyApp:
         self.headers['Content-Type'] = 'text/html'
         return template_render('view.html', mapping_dict)
 
-    def stat(self, environ, start_response):
+    def stat(self, environ):
         # Отображение таблица со списком тех регионов, у которых количество комментариев больше 5
-        print('stat')
         path_parts = (environ['PATH_INFO']).split('/')
 
         cursor = self.db.cursor()
@@ -111,7 +97,6 @@ class MyApp:
         # Если есть цифра в ссылке, то отображаются города
         if path_parts[-1].isdigit():
             region_id = int(path_parts[-1])
-            print(region_id)
             query = ('''SELECT ci.name, count(co.id)
                         FROM city ci
                         JOIN "user" u ON ci.id = u.city_id
@@ -140,7 +125,7 @@ class MyApp:
                         JOIN "user" u ON ci.id = u.city_id
                         JOIN comment co ON co.user_id = u.id
                         GROUP BY r.name
-                        HAVING count(co.id) > 1
+                        HAVING count(co.id) > ?
                         ORDER BY r.name 
                         ''')
 
@@ -148,7 +133,7 @@ class MyApp:
                                         <tr><th>Регион</th><th>Кол-во комментариев</th></tr>'''
 
             try:
-                for i in cursor.execute(query):
+                for i in cursor.execute(query, (config.COMMENTS_NUMBER,)):
                     mapping_dict['table'] += '<tr><td><a href="/stat/{}">{}</a></td><td>{}</td></tr>'. \
                         format(i[0], i[1], i[2])
             except sqlite3.Error as e:
@@ -159,9 +144,9 @@ class MyApp:
         self.headers['Content-Type'] = 'text/html'
         return template_render('stat.html', mapping_dict)
 
-    def save_comment(self, environ, start_response):
+    def save_comment(self, environ):
         if environ['REQUEST_METHOD'] != 'POST':
-            self.show_404(environ, start_response)
+            return self.show_404()
 
         try:
             request_body_size = int(environ.get('CONTENT_LENGTH', 0))
@@ -239,10 +224,9 @@ class MyApp:
         self.headers['Content-Type'] = 'application/json'
         return [body]
 
-    def delete_comment(self, environ, start_response):
-        print('delete_comment')
+    def delete_comment(self, environ):
         if environ['REQUEST_METHOD'] != 'POST':
-            self.show_404(environ, start_response)
+            return self.show_404()
 
         try:
             request_body_size = int(environ.get('CONTENT_LENGTH', 0))
@@ -276,7 +260,7 @@ class MyApp:
         self.headers['Content-Type'] = 'application/json'
         return [body]
 
-    def static(self, environ, start_response):
+    def static(self, environ):
         path = environ['PATH_INFO']
         path = path.replace(config.STATIC_URL_PREFIX, config.STATIC_FILE_DIR)
 
@@ -287,6 +271,7 @@ class MyApp:
             type = self.MIME_TABLE[ext]
 
         # --------------------- Чтение файла -----------------------------------
+        content = ''
         try:
             h = open(path, 'rb')
             content = h.read()
@@ -297,18 +282,14 @@ class MyApp:
         self.headers['Content-Type'] = type
         return [content]
 
-    def show_404(self, environ, start_response):
+    def show_404(self):
         mapping_dict = dict()
         mapping_dict['data'] = '<h1>404</h1><p>Страница не надена. Пожалуйста, перейдите по одной из ссылок в меню.</p>'
 
         self.headers['Content-Type'] = 'text/html'
         return template_render('index.html', mapping_dict)
 
-    def is_post_request(self, environ, start_response):
-        if environ['REQUEST_METHOD'] != 'POST':
-            self.show_404(environ, start_response)
-
-    def serve(self, environ, start_response):
+    def serve(self, environ):
         urls = [
             (r'^$', self.index),
             (r'^comment', self.comment),
@@ -323,11 +304,8 @@ class MyApp:
 
         for key, func in urls:
             match = re.search(key, path)
-            # if path == key:
             if match is not None:
-                return func(environ, start_response)
+                return func(environ)
             elif environ['PATH_INFO'].startswith(config.STATIC_URL_PREFIX):
-                # if not os.path.exists(path):
-                #     return self.show_404(environ, start_response)
-                return self.static(environ, start_response)
-        return self.show_404(environ, start_response)
+                return self.static(environ)
+        return self.show_404()
